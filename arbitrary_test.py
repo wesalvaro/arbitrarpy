@@ -15,6 +15,7 @@ class ArbitrarpyExampleTest(jazz.Describe):
   STATE = arbitrary.STATE
   # COUNTRY = arbitrary.COUNTRY
   ZIP = arbitrary.ZIP
+  TWO_WORDS = (arbitrary.WORD + ' ') * 2
   # LAT = arbitrary.LAT
   # LON = arbitrary.LON
   # SENTENCE = arbitrary.SENTENCE
@@ -37,6 +38,8 @@ class ArbitrarpyExampleTest(jazz.Describe):
   def it_should_create_a_username(self):
     expect(type(self.USERNAME)).toBe(str)
     expect(self.USERNAME).notToContain(' ')
+    expect(len(self.USERNAME)).toBeGreaterThan(5)
+    expect(len(self.USERNAME)).toBeLessThan(9)
 
   def it_should_create_an_address(self):
     addr = self.ADDRESS.split(' ')
@@ -46,6 +49,8 @@ class ArbitrarpyExampleTest(jazz.Describe):
   def it_should_create_different_names(self):
     expect(self.FIRST_NAME).notToEqual(self.LAST_NAME)
 
+  def it_should_create_repeated_values(self):
+    expect(len(self.TWO_WORDS.split())).toEqual(2)
 
 if __name__ == '__main__':
   jazz.run()

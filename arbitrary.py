@@ -1,3 +1,4 @@
+import math
 import random
 import sys
 
@@ -61,28 +62,71 @@ def Values(cls):
   for a, v in cls.__dict__.iteritems():
     if isinstance(v, Arbitrary):
       value = v.Value()
-      print 'Created arbitrary value %r' % value
+      print 'Created arbitrary %s: %r' % (a, value)
       setattr(cls, a, value)
   return cls
 
 
 class Arbitrary(object):
-  PATTERN = None
-  BOUNDED = False
+  """This class is a "mixin" to subclass for the test decorator."""
 
-  def __init__(self, pattern=None, bounded=False):
-    self.pattern = pattern or self.PATTERN
-    self.bounded = bounded or self.BOUNDED
+
+class Pattern(Arbitrary):
+
+  def __init__(self, pattern):
+    self.pattern = str(pattern)
 
   def Value(self):
-    if self.pattern:
-      return Fill(self.pattern)
-  
+    return Fill(self.pattern)
 
-class RangedArbitrary(Arbitrary):
+  def __mul__(self, v):
+    return Pattern(self.pattern * v)
+
+  def __add__(self, v):
+    if isinstance(v, Arbitrary):
+      pattern = v.pattern
+    else:
+      pattern = v
+    return Pattern(self.pattern + pattern)
+
+  def __getitem__(self, bounds):
+    if bounds.start is not None and bounds.stop is not None:
+      pattern_len = random.randrange(bounds.start, bounds.stop)
+    elif bounds.start is not None:
+      pattern_len = random.randrange(bounds.start, len(self.pattern))
+    elif bounds.stop is not None:
+      pattern_len = random.randrange(0, bounds.stop)
+    else:
+      pattern_len = len(self.pattern)
+    if pattern_len > len(self.pattern):  # Extend pattern
+      pattern = self.pattern * math.ceil(1. * pattern_len / len(self.pattern))
+    else:
+      pattern = self.pattern
+    if bounds.step:  # Randomize
+      pattern = ''.join(random.sample(self.pattern, pattern_len))
+    else:
+      pattern = self.pattern[:pattern_len]
+    return Pattern(pattern)
+
+class Float(Arbitrary):
+
+  def __init__(self, start=None, stop=None):
+    self.stop = sys.maxint if stop is None else stop
+    self.start = -sys.maxint - 1 if start is None else start
+
+  def Value(self):
+    return random.uniform(self.start, self.stop)
+
+  def __getitem__(self, bounds):
+    assert type(bounds) == slice, 'Index must be a slice.'
+    start = self.start if bounds.start is None else bounds.start
+    stop = self.stop if bounds.stop is None else bounds.stop
+    return Float(start=start, stop=stop)
+
+
+class Range(Arbitrary):
 
   def __init__(self, start=None, stop=None, step=None):
-    super(RangedArbitrary, self).__init__()
     self.stop = sys.maxint if stop is None else stop
     self.start = -sys.maxint - 1 if start is None else start
     self.step = 1 if step is None else step
@@ -95,34 +139,27 @@ class RangedArbitrary(Arbitrary):
     start = self.start if bounds.start is None else bounds.start
     stop = self.stop if bounds.stop is None else bounds.stop
     step = self.step if bounds.step is None else bounds.step
-    return self.__class__(start=start, stop=stop, step=step)
+    return Range(start=start, stop=stop, step=step)
 
 
-class IndexedArbitrary(RangedArbitrary):
+class Index(Arbitrary):
 
   def __init__(self, items):
     self.items = items
-    super(IndexedArbitrary, self).__init__(start=0, stop=len(items))
 
   def Value(self):
-    i = super(IndexedArbitrary, self).Value()
-    return self.items[i]
-   
+    return self.items[random.randrange(0, len(self.items))]
 
-class FloatingArbitrary(RangedArbitrary):
 
-  def Value(self):
-    return random.uniform(self.start, self.stop)
-    
-
-ZIP = Arbitrary(pattern='#####')      
-USER = Arbitrary(pattern='aaaaaaaa')
-NAME = Arbitrary(pattern='Aaaaaaaa')
-ADDR = Arbitrary(pattern='#### Aaaaaaaa AA')
-PHONE = Arbitrary(pattern='(###) ###-####')
-SSN = Arbitrary(pattern='###-##-####')
-STATE = IndexedArbitrary(items=['CA', 'TN', 'WA', 'FL', 'TX', 'NJ'])
-INT = RangedArbitrary()
+ZIP = Pattern('#####')
+WORD = Pattern('aaaaaaaa')
+USER = Pattern('aaaa####')[6:8:True]
+NAME = Pattern('Aaaaaaaa')
+ADDR = Pattern('#### Aaaaaaaa AA')
+PHONE = Pattern('(###) ###-####')
+SSN = Pattern('###-##-####')
+STATE = Index(['CA', 'TN', 'WA', 'FL', 'TX', 'NJ'])
+INT = Range()
 INT_POS = INT[0:]
 INT_NEG = INT[:0]
-FLOAT = FloatingArbitrary()
+FLOAT = Float()
