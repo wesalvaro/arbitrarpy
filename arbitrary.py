@@ -4,7 +4,7 @@ import sys
 _LOWER_ALPHA = 'abcdefghijklmnopqrstuvwxyz'
 _UPPER_ALPHA = _LOWER_ALPHA.upper()
 _NUMBERS = '0123456789'
-_WHITESPACES = '\n\t '
+_WHITESPACES = ' \n\t\r'
 _SYMBOLS = r'`~!@#$%^&*(){}[]?+|/=\-_"<>,.\''
 
 _PATTERN_KEY = {
@@ -14,6 +14,8 @@ _PATTERN_KEY = {
   'w': _WHITESPACES,
   's': _SYMBOLS,
 }
+
+
 def Fill(pattern):
   """Fills an arbitrary pattern.
 
@@ -54,6 +56,7 @@ def Fill(pattern):
       final.append(c)
   return ''.join(final)
 
+
 def Values(cls):
   for a, v in cls.__dict__.iteritems():
     if isinstance(v, Arbitrary):
@@ -79,6 +82,7 @@ class Arbitrary(object):
 class RangedArbitrary(Arbitrary):
 
   def __init__(self, start=None, stop=None, step=None):
+    super(RangedArbitrary, self).__init__()
     self.stop = sys.maxint if stop is None else stop
     self.start = -sys.maxint - 1 if start is None else start
     self.step = 1 if step is None else step
@@ -88,22 +92,17 @@ class RangedArbitrary(Arbitrary):
   
   def __getitem__(self, bounds):
     assert type(bounds) == slice, 'Index must be a slice.'
-    d = self.__dict__.copy()
-    d['start'] = self.start if bounds.start is None else bounds.start
-    d['stop'] = self.stop if bounds.stop is None else bounds.stop
-    d['step'] = self.step if bounds.step is None else bounds.step
-    return self.__class__(**d)
+    start = self.start if bounds.start is None else bounds.start
+    stop = self.stop if bounds.stop is None else bounds.stop
+    step = self.step if bounds.step is None else bounds.step
+    return self.__class__(start=start, stop=stop, step=step)
 
 
 class IndexedArbitrary(RangedArbitrary):
-  ITEMS = None
 
-  def __init__(self, items=None, start=None, stop=None, **kwargs):
-    self.items = items or self.ITEMS
-    start = start or 0
-    stop = stop or len(items)
-    super(IndexedArbitrary, self).__init__(start=start, stop=stop, **kwargs)
-    
+  def __init__(self, items):
+    self.items = items
+    super(IndexedArbitrary, self).__init__(start=0, stop=len(items))
 
   def Value(self):
     i = super(IndexedArbitrary, self).Value()

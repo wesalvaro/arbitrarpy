@@ -43,5 +43,9 @@ class ArbitrarpyExampleTest(jazz.Describe):
     expect(int(addr[0])).toBeGreaterThan(0)
     expect(len(addr[1])).toBeGreaterThan(0)
 
+  def it_should_create_different_names(self):
+    expect(self.FIRST_NAME).notToEqual(self.LAST_NAME)
+
+
 if __name__ == '__main__':
   jazz.run()
