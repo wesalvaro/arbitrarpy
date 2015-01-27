@@ -30,13 +30,13 @@ class ArbitrarpyExampleTest(jazz.Describe):
   FLOAT = arbitrary.FLOAT
 
   def it_should_create_an_int(self):
-    expect(type(self.INT)).toBe(int)
+    expect(self.INT).toBeInstanceOf(int)
 
   def it_should_create_a_float(self):
-    expect(type(self.FLOAT)).toBe(float)
+    expect(self.FLOAT).toBeInstanceOf(float)
 
   def it_should_create_a_username(self):
-    expect(type(self.USERNAME)).toBe(str)
+    expect(self.USERNAME).toBeInstanceOf(str)
     expect(self.USERNAME).notToContain(' ')
     expect(len(self.USERNAME)).toBeGreaterThan(5)
     expect(len(self.USERNAME)).toBeLessThan(9)
